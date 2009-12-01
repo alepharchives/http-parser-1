@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE. 
  */
-#include <http_parser.h>
+#include "http_parser.h"
 #include <stdint.h>
 #include <assert.h>
 
@@ -71,6 +71,7 @@ static inline int FOR##_callback (http_parser *parser, const char *p) \
   return r; \
 }
 
+DEFINE_CALLBACK(method)
 DEFINE_CALLBACK(url)
 DEFINE_CALLBACK(path)
 DEFINE_CALLBACK(query_string)
@@ -163,20 +164,7 @@ enum state
   , s_res_line_almost_done
 
   , s_start_req
-  , s_req_method_G
-  , s_req_method_GE
-  , s_req_method_P
-  , s_req_method_PU
-  , s_req_method_PO
-  , s_req_method_POS
-  , s_req_method_H
-  , s_req_method_HE
-  , s_req_method_HEA
-  , s_req_method_D
-  , s_req_method_DE
-  , s_req_method_DEL
-  , s_req_method_DELE
-  , s_req_method_DELET
+  , s_req_method
   , s_req_spaces_before_url
   , s_req_schema
   , s_req_schema_slash
@@ -287,6 +275,7 @@ size_t parse (http_parser *parser, const char *data, size_t len, int start_state
   if (parser->query_string_mark)   parser->query_string_mark   = data;
   if (parser->path_mark)           parser->path_mark           = data;
   if (parser->url_mark)            parser->url_mark            = data;
+  if (parser->method_mark)         parser->method_mark         = data;
 
   for (p=data, pe=data+len; p != pe; p++) {
     ch = *p;
@@ -452,134 +441,34 @@ size_t parse (http_parser *parser, const char *data, size_t len, int start_state
 
         CALLBACK2(message_begin);
 
-        switch (ch) {
-          /* GET */
-          case 'G':
-            state = s_req_method_G;
-            break;
+        c = LOWER(ch);
 
-          /* POST, PUT */
-          case 'P':
-            state = s_req_method_P;
-            break;
-
-          /* HEAD */
-          case 'H':
-            state = s_req_method_H;
-            break;
-
-          /* DELETE */
-          case 'D':
-            state = s_req_method_D;
-            break;
-
-          case CR:
-          case LF:
-            break;
-
-          default:
-            goto error;
+        if (c >= 'a' && c <= 'z') {
+          MARK(method);
+          state = s_req_method;
+          break;
         }
-        break;
+
+        goto error;
       }
 
-      /* GET */
-
-      case s_req_method_G:
-        STRICT_CHECK(ch != 'E');
-        state = s_req_method_GE;
-        break;
-
-      case s_req_method_GE:
-        STRICT_CHECK(ch != 'T');
-        parser->method = HTTP_GET;
-        state = s_req_spaces_before_url;
-        break;
-
-      /* HEAD */
-
-      case s_req_method_H:
-        STRICT_CHECK(ch != 'E');
-        state = s_req_method_HE;
-        break;
-
-      case s_req_method_HE:
-        STRICT_CHECK(ch != 'A');
-        state = s_req_method_HEA;
-        break;
-
-      case s_req_method_HEA:
-        STRICT_CHECK(ch != 'D');
-        parser->method = HTTP_HEAD;
-        state = s_req_spaces_before_url;
-        break;
-
-      /* POST, PUT */
-
-      case s_req_method_P:
-        switch (ch) {
-          case 'O':
-            state = s_req_method_PO;
-            break;
-
-          case 'U':
-            state = s_req_method_PU;
-            break;
-
-          default:
-            goto error;
+      case s_req_method:
+      {
+        if (ch == ' ') {
+          CALLBACK(method);
+          state = s_req_spaces_before_url;
+          break;
         }
-        break;
-
-      /* PUT */
-
-      case s_req_method_PU:
-        STRICT_CHECK(ch != 'T');
-        parser->method = HTTP_PUT;
-        state = s_req_spaces_before_url;
-        break;
-
-      /* POST */
-
-      case s_req_method_PO:
-        STRICT_CHECK(ch != 'S');
-        state = s_req_method_POS;
-        break;
-
-      case s_req_method_POS:
-        STRICT_CHECK(ch != 'T');
-        parser->method = HTTP_POST;
-        state = s_req_spaces_before_url;
-        break;
-
-      /* DELETE */
-
-      case s_req_method_D:
-        STRICT_CHECK(ch != 'E');
-        state = s_req_method_DE;
-        break;
-
-      case s_req_method_DE:
-        STRICT_CHECK(ch != 'L');
-        state = s_req_method_DEL;
-        break;
-
-      case s_req_method_DEL:
-        STRICT_CHECK(ch != 'E');
-        state = s_req_method_DELE;
-        break;
-
-      case s_req_method_DELE:
-        STRICT_CHECK(ch != 'T');
-        state = s_req_method_DELET;
-        break;
-
-      case s_req_method_DELET:
-        STRICT_CHECK(ch != 'E');
-        parser->method = HTTP_DELETE;
-        state = s_req_spaces_before_url;
-        break;
-
+        
+        c = LOWER(ch);
+        
+        if (c >= 'a' && c <= 'z') {
+          break;
+        }
+        
+        goto error;
+      }
+      
 
       case s_req_spaces_before_url:
       {
@@ -1410,6 +1299,7 @@ size_t parse (http_parser *parser, const char *data, size_t len, int start_state
   CALLBACK_NOCLEAR(query_string);
   CALLBACK_NOCLEAR(path);
   CALLBACK_NOCLEAR(url);
+  CALLBACK_NOCLEAR(method);
 
   parser->state = state;
   parser->header_state = header_state;
@@ -1464,6 +1354,7 @@ http_parser_init (http_parser *parser)
 {
   parser->state = 0;
   parser->on_message_begin = NULL;
+  parser->on_method = NULL;
   parser->on_path = NULL;
   parser->on_query_string = NULL;
   parser->on_url = NULL;
@@ -1476,6 +1367,7 @@ http_parser_init (http_parser *parser)
 
   parser->header_field_mark = NULL;
   parser->header_value_mark = NULL;
+  parser->method_mark = NULL;
   parser->query_string_mark = NULL;
   parser->path_mark = NULL;
   parser->url_mark = NULL;

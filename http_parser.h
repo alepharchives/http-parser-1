@@ -50,15 +50,6 @@ typedef struct http_parser http_parser;
 typedef int (*http_data_cb) (http_parser*, const char *at, size_t length);
 typedef int (*http_cb) (http_parser*);
 
-/* Request Methods */
-enum http_method
-  { HTTP_DELETE    = 0x0002
-  , HTTP_GET       = 0x0004
-  , HTTP_HEAD      = 0x0008
-  , HTTP_POST      = 0x0100
-  , HTTP_PUT       = 0x0800
-  };
-
 struct http_parser {
   /** PRIVATE **/
   unsigned short state;
@@ -74,6 +65,8 @@ struct http_parser {
   size_t      header_field_size;
   const char *header_value_mark;
   size_t      header_value_size;
+  const char *method_mark;
+  size_t      method_size;
   const char *query_string_mark;
   size_t      query_string_size;
   const char *path_mark;
@@ -85,7 +78,6 @@ struct http_parser {
 
   /** READ-ONLY **/
   unsigned short status_code; /* responses only */
-  enum http_method method;    /* requests only */
   unsigned short http_major;
   unsigned short http_minor;
 
@@ -97,6 +89,7 @@ struct http_parser {
   http_cb      on_message_begin;
 
   /* requests only */
+  http_data_cb on_method;
   http_data_cb on_path;
   http_data_cb on_query_string;
   http_data_cb on_url;

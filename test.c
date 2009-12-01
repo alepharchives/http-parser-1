@@ -42,8 +42,8 @@ struct message {
   const char *name; // for debugging purposes
   const char *raw;
   enum message_type type;
-  enum http_method method;
   int status_code;
+  char request_method[MAX_ELEMENT_SIZE];
   char request_path[MAX_ELEMENT_SIZE];
   char request_url[MAX_ELEMENT_SIZE];
   char fragment[MAX_ELEMENT_SIZE];
@@ -91,9 +91,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE 
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_GET
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "GET"
   ,.request_path= "/test"
   ,.request_url= "/test"
   ,.num_headers= 3
@@ -122,9 +122,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE 
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_GET
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "GET"
   ,.request_path= "/favicon.ico"
   ,.request_url= "/favicon.ico"
   ,.num_headers= 8
@@ -151,9 +151,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE 
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_GET
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "GET"
   ,.request_path= "/dumbfuck"
   ,.request_url= "/dumbfuck"
   ,.num_headers= 1
@@ -172,9 +172,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE 
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_GET
   ,.query_string= "page=1"
   ,.fragment= "posts-17408"
+  ,.request_method= "GET"
   ,.request_path= "/forums/1/topics/2375"
   /* XXX request url does include fragment? */
   ,.request_url= "/forums/1/topics/2375?page=1#posts-17408"
@@ -191,9 +191,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE /* would need Connection: close */
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_GET
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "GET"
   ,.request_path= "/get_no_headers_no_body/world"
   ,.request_url= "/get_no_headers_no_body/world"
   ,.num_headers= 0
@@ -210,9 +210,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE /* would need Connection: close */
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_GET
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "GET"
   ,.request_path= "/get_one_header_no_body"
   ,.request_url= "/get_one_header_no_body"
   ,.num_headers= 1
@@ -233,9 +233,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE
   ,.http_major= 1
   ,.http_minor= 0
-  ,.method= HTTP_GET
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "GET"
   ,.request_path= "/get_funky_content_length_body_hello"
   ,.request_url= "/get_funky_content_length_body_hello"
   ,.num_headers= 1
@@ -258,9 +258,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_POST
   ,.query_string= "q=search"
   ,.fragment= "hey"
+  ,.request_method= "POST"
   ,.request_path= "/post_identity_body_world"
   ,.request_url= "/post_identity_body_world?q=search#hey"
   ,.num_headers= 3
@@ -285,9 +285,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_POST
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "POST"
   ,.request_path= "/post_chunked_all_your_base"
   ,.request_url= "/post_chunked_all_your_base"
   ,.num_headers= 1
@@ -311,9 +311,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_POST
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "POST"
   ,.request_path= "/two_chunks_mult_zero_end"
   ,.request_url= "/two_chunks_mult_zero_end"
   ,.num_headers= 1
@@ -339,9 +339,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_POST
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "POST"
   ,.request_path= "/chunked_w_trailing_headers"
   ,.request_url= "/chunked_w_trailing_headers"
   ,.num_headers= 3
@@ -367,9 +367,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_POST
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "POST"
   ,.request_path= "/chunked_w_bullshit_after_length"
   ,.request_url= "/chunked_w_bullshit_after_length"
   ,.num_headers= 1
@@ -387,9 +387,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE
   ,.http_major= 1
   ,.http_minor= 1
-  ,.method= HTTP_GET
   ,.query_string= "foo=\"bar\""
   ,.fragment= ""
+  ,.request_method= "GET"
   ,.request_path= "/with_\"stupid\"_quotes"
   ,.request_url= "/with_\"stupid\"_quotes?foo=\"bar\""
   ,.num_headers= 0
@@ -413,9 +413,9 @@ const struct message requests[] =
   ,.message_complete_on_eof= FALSE
   ,.http_major= 1
   ,.http_minor= 0
-  ,.method= HTTP_GET
   ,.query_string= ""
   ,.fragment= ""
+  ,.request_method= "GET"
   ,.request_path= "/test"
   ,.request_url= "/test"
   ,.num_headers= 3
@@ -583,6 +583,14 @@ const struct message responses[] =
 };
 
 int
+request_method_cb (http_parser *p, const char *buf, size_t len)
+{
+  assert(p == parser);
+  strncat(messages[num_messages].request_method, buf, len);
+  return 0;
+}
+
+int
 request_path_cb (http_parser *p, const char *buf, size_t len)
 {
   assert(p == parser);
@@ -664,7 +672,6 @@ int
 headers_complete_cb (http_parser *p)
 {
   assert(p == parser);
-  messages[num_messages].method = parser->method;
   messages[num_messages].status_code = parser->status_code;
   messages[num_messages].http_major = parser->http_major;
   messages[num_messages].http_minor = parser->http_minor;
@@ -709,6 +716,7 @@ parser_init ()
   parser->on_message_begin     = message_begin_cb;
   parser->on_header_field      = header_field_cb;
   parser->on_header_value      = header_value_cb;
+  parser->on_method            = request_method_cb;
   parser->on_path              = request_path_cb;
   parser->on_url               = request_url_cb;
   parser->on_fragment          = fragment_cb;
@@ -771,7 +779,7 @@ message_eq (int index, const struct message *expected)
   MESSAGE_CHECK_NUM_EQ(expected, m, http_minor);
 
   if (expected->type == REQUEST) {
-    MESSAGE_CHECK_NUM_EQ(expected, m, method);
+    MESSAGE_CHECK_STR_EQ(expected, m, request_method);
   } else {
     MESSAGE_CHECK_NUM_EQ(expected, m, status_code);
   }
@@ -841,7 +849,7 @@ print_error (const char *raw, size_t error_location)
   for (j = 0; j < error_location_line; j++) {
     fputc(' ', stderr);
   }
-  fprintf(stderr, "^\n\nerror location: %d\n", error_location);
+  fprintf(stderr, "^\n\nerror location: %lu\n", error_location);
 }
 
 
@@ -1033,9 +1041,9 @@ test_scan (const struct message *r1, const struct message *r2, const struct mess
 
 error:
   fprintf(stderr, "i=%d  j=%d\n", i, j);
-  fprintf(stderr, "buf1 (%d) %s\n\n", buf1_len, buf1);
-  fprintf(stderr, "buf2 (%d) %s\n\n", buf2_len , buf2);
-  fprintf(stderr, "buf3 (%d) %s\n", buf3_len, buf3);
+  fprintf(stderr, "buf1 (%lu) %s\n\n", buf1_len, buf1);
+  fprintf(stderr, "buf2 (%lu) %s\n\n", buf2_len , buf2);
+  fprintf(stderr, "buf3 (%lu) %s\n", buf3_len, buf3);
   exit(1);
 }
 
@@ -1047,7 +1055,7 @@ main (void)
   int request_count;
   int response_count;
 
-  printf("sizeof(http_parser) = %d\n", sizeof(http_parser));
+  printf("sizeof(http_parser) = %lu\n", sizeof(http_parser));
 
   for (request_count = 0; requests[request_count].name; request_count++);
   for (response_count = 0; responses[response_count].name; response_count++);
@@ -1080,7 +1088,8 @@ main (void)
   /// REQUESTS
 
 
-  test_error("hello world");
+  test_error("hello world!");
+  test_error("GE1 / HTTP/1.1\r\n\r\n");
   test_error("GET / HTP/1.1\r\n\r\n");
 
   const char *dumbfuck2 =
